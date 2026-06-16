@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#08080c" />
+<title>LOOPER // RAGE PAD</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap');
+
+  :root {
+    --bg: #08080c;
+    --bg2: #0e0e16;
+    --panel: #14141f;
+    --purple: #b026ff;
+    --cyan: #00f0ff;
+    --red: #ff2d55;
+    --green: #39ff14;
+    --txt: #e8e8f0;
+    --dim: #6a6a82;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--txt);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    background:
+      radial-gradient(circle at 20% 0%, rgba(176,38,255,0.12), transparent 45%),
+      radial-gradient(circle at 90% 100%, rgba(0,240,255,0.10), transparent 45%),
+      var(--bg);
+  }
+
+  /* ---------- HEADER ---------- */
+  header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px 6px;
+  }
+  .logo {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: #fff;
+    text-shadow: 0 0 8px var(--purple), 0 0 18px rgba(176,38,255,0.6);
+    position: relative;
+  }
+  .logo span { color: var(--cyan); text-shadow: 0 0 8px var(--cyan); }
+  .logo.glitch::after {
+    content: 'LOOPER';
+    position: absolute; left: 2px; top: 0;
+    color: var(--red); opacity: 0.7; clip-path: inset(0 0 60% 0);
+    animation: glitch 1.6s infinite steps(2);
+    pointer-events: none;
+  }
+  @keyframes glitch {
+    0%,90%,100% { transform: translate(0,0); }
+    92% { transform: translate(-2px,1px); }
+    94% { transform: translate(2px,-1px); }
+    96% { transform: translate(-1px,0); }
+  }
+  .status {
+    font-size: 11px;
+    color: var(--dim);
+    text-align: right;
+    line-height: 1.4;
+  }
+  .status b { color: var(--green); }
+
+  /* ---------- PAD GRID ---------- */
+  .grid {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 8px;
+    padding: 8px 12px;
+    min-height: 0;
+  }
+  .pad {
+    position: relative;
+    border-radius: 14px;
+    background: linear-gradient(160deg, var(--panel), var(--bg2));
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.04s ease, box-shadow 0.12s ease;
+    --c: var(--purple);
+  }
+  .pad::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 14px;
+    background: radial-gradient(circle at 50% 120%, var(--c), transparent 70%);
+    opacity: 0.18;
+    pointer-events: none;
+  }
+  .pad .num {
+    position: absolute; top: 6px; left: 8px;
+    font-size: 10px; color: var(--dim);
+  }
+  .pad .lbl {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+    text-shadow: 0 0 6px var(--c);
+    padding: 0 4px;
+    z-index: 2;
+    line-height: 1.15;
+  }
+  .pad .sub {
+    font-size: 9px;
+    color: var(--dim);
+    margin-top: 3px;
+    z-index: 2;
+  }
+  .pad.active {
+    transform: scale(0.94);
+    border-color: var(--c);
+    box-shadow: 0 0 18px var(--c), 0 0 40px var(--c), inset 0 0 22px rgba(255,255,255,0.08);
+  }
+  .pad.active::before { opacity: 0.55; }
+  /* sequencer step indicator */
+  .pad.armed { border-color: var(--c); box-shadow: inset 0 0 0 2px var(--c); }
+  .pad .stepdot {
+    position: absolute; top: 6px; right: 8px;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--c); opacity: 0; box-shadow: 0 0 8px var(--c);
+  }
+  .pad.playhead .stepdot { opacity: 1; }
+
+  /* ---------- CONTROLS ---------- */
+  .controls {
+    flex: 0 0 auto;
+    background: linear-gradient(180deg, rgba(20,20,31,0.6), rgba(10,10,18,0.95));
+    border-top: 1px solid rgba(176,38,255,0.25);
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  }
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 8px;
+  }
+  .row:last-child { margin-bottom: 0; }
+
+  .knobwrap { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .knob {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #20202e, #0a0a12);
+    border: 2px solid var(--c, var(--purple));
+    position: relative;
+    box-shadow: 0 0 10px rgba(176,38,255,0.4), inset 0 2px 6px rgba(0,0,0,0.6);
+    touch-action: none;
+    --c: var(--purple);
+  }
+  .knob.cyan { --c: var(--cyan); box-shadow: 0 0 10px rgba(0,240,255,0.4), inset 0 2px 6px rgba(0,0,0,0.6); }
+  .knob.red { --c: var(--red); box-shadow: 0 0 10px rgba(255,45,85,0.4), inset 0 2px 6px rgba(0,0,0,0.6); }
+  .knob::after {
+    content: '';
+    position: absolute; left: 50%; top: 6px;
+    width: 3px; height: 18px; border-radius: 2px;
+    background: var(--c);
+    transform-origin: 50% 22px;
+    transform: translateX(-50%) rotate(var(--rot, -135deg));
+    box-shadow: 0 0 6px var(--c);
+  }
+  .knob .val {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: #fff;
+    pointer-events: none;
+    text-shadow: 0 0 6px var(--c);
+  }
+  .klabel { font-size: 9px; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; }
+
+  .spacer { flex: 1 1 auto; }
+
+  .btn {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--panel);
+    color: var(--txt);
+    border: 1px solid rgba(255,255,255,0.12);
+    cursor: pointer;
+    transition: all 0.12s ease;
+    text-transform: uppercase;
+  }
+  .btn:active { transform: scale(0.95); }
+  .btn.rec { color: var(--red); border-color: var(--red); }
+  .btn.rec.on { background: var(--red); color: #fff; box-shadow: 0 0 16px var(--red); animation: pulse 1s infinite; }
+  .btn.play { color: var(--green); border-color: var(--green); }
+  .btn.play.on { background: var(--green); color: #000; box-shadow: 0 0 16px var(--green); }
+  .btn.clr { color: var(--dim); }
+  @keyframes pulse { 50% { opacity: 0.6; } }
+
+  /* BPM dial */
+  .bpm {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .bpmdial {
+    width: 70px; height: 70px; border-radius: 50%;
+    background: radial-gradient(circle at 50% 40%, #1a1a28, #060609);
+    border: 2px solid var(--cyan);
+    position: relative;
+    box-shadow: 0 0 14px rgba(0,240,255,0.5), inset 0 2px 8px rgba(0,0,0,0.7);
+    touch-action: none;
+  }
+  .bpmdial::after {
+    content: '';
+    position: absolute; left: 50%; top: 5px;
+    width: 3px; height: 22px; border-radius: 2px;
+    background: var(--cyan); box-shadow: 0 0 8px var(--cyan);
+    transform-origin: 50% 30px;
+    transform: translateX(-50%) rotate(var(--rot, -135deg));
+  }
+  .bpmval {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none;
+  }
+  .bpmval b { font-family: 'Orbitron'; font-size: 18px; color: #fff; text-shadow: 0 0 8px var(--cyan); }
+  .bpmval small { font-size: 8px; color: var(--dim); letter-spacing: 1px; }
+
+  /* step lights */
+  .steps {
+    display: flex; gap: 4px; align-items: center; justify-content: center;
+    flex: 1 1 auto;
+  }
+  .steplight {
+    flex: 1 1 0;
+    height: 6px; border-radius: 3px;
+    background: #20202e;
+    transition: all 0.05s;
+  }
+  .steplight.on { background: var(--purple); box-shadow: 0 0 8px var(--purple); }
+
+  /* flash overlay for glitch */
+  #flash {
+    position: fixed; inset: 0; pointer-events: none; z-index: 99;
+    background: var(--cyan); opacity: 0; mix-blend-mode: screen;
+  }
+</style>
+</head>
+<body>
+  <div id="flash"></div>
+
+  <header>
+    <div class="logo glitch">LOO<span>PER</span></div>
+    <div class="status">
+      <div>MODE <b id="modeTxt">LIVE</b></div>
+      <div id="engineTxt">tap to start</div>
+    </div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <section class="controls">
+    <div class="row">
+      <div class="steps" id="steps"></div>
+    </div>
+    <div class="row">
+      <div class="bpm">
+        <div class="bpmdial" id="bpmDial">
+          <div class="bpmval"><b id="bpmNum">140</b><small>BPM</small></div>
+        </div>
+      </div>
+      <div class="knobwrap">
+        <div class="knob" id="kReverb"><div class="val" id="vReverb">20</div></div>
+        <div class="klabel">Reverb</div>
+      </div>
+      <div class="knobwrap">
+        <div class="knob red" id="kDrive"><div class="val" id="vDrive">15</div></div>
+        <div class="klabel">Drive</div>
+      </div>
+      <div class="spacer"></div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn rec" id="btnRec">● REC</button>
+        <button class="btn play" id="btnPlay">▶ LOOP</button>
+        <button class="btn clr" id="btnClr">CLR</button>
+      </div>
+    </div>
+  </section>
+
+<script>
+"use strict";
+
+/* ============================================================
+   LOOPER // RAGE PAD  —  Web Audio synthesis engine
+   All 16 sounds are generated procedurally. No samples.
+   ============================================================ */
+
+let AC = null;          // AudioContext
+let master, dryGain, wetGain, convolver, driveNode, driveWet, driveDry, comp;
+let reverbAmount = 0.20;
+let driveAmount = 0.15;
+
+/* ---- Build the audio graph lazily on first user gesture ---- */
+function initAudio() {
+  if (AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+
+  master = AC.createGain();
+  master.gain.value = 0.9;
+
+  comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -10;
+  comp.knee.value = 20;
+  comp.ratio.value = 8;
+  comp.attack.value = 0.003;
+  comp.release.value = 0.18;
+
+  // global distortion (waveshaper) with wet/dry
+  driveNode = AC.createWaveShaper();
+  driveNode.oversample = '4x';
+  driveDry = AC.createGain();
+  driveWet = AC.createGain();
+  setDrive(driveAmount);
+
+  // reverb (algorithmic impulse) wet/dry
+  convolver = AC.createConvolver();
+  convolver.buffer = makeImpulse(2.4, 2.6);
+  dryGain = AC.createGain();
+  wetGain = AC.createGain();
+  setReverb(reverbAmount);
+
+  // routing:  sources -> [busIn] -> drive(dry+wet) -> reverb(dry+wet) -> comp -> master -> dest
+  window.busIn = AC.createGain();
+  busIn.connect(driveDry);
+  busIn.connect(driveNode);
+  driveNode.connect(driveWet);
+
+  const postDrive = AC.createGain();
+  driveDry.connect(postDrive);
+  driveWet.connect(postDrive);
+
+  postDrive.connect(dryGain);
+  postDrive.connect(convolver);
+  convolver.connect(wetGain);
+
+  dryGain.connect(comp);
+  wetGain.connect(comp);
+  comp.connect(master);
+  master.connect(AC.destination);
+
+  document.getElementById('engineTxt').innerHTML = '<b>ENGINE ON</b>';
+}
+
+/* waveshaper curve for distortion */
+function makeDriveCurve(amount) {
+  const k = amount * 100;
+  const n = 1024;
+  const curve = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    curve[i] = (Math.PI + k) * x / (Math.PI + k * Math.abs(x));
+  }
+  return curve;
+}
+function setDrive(v) {
+  driveAmount = v;
+  if (!AC) return;
+  driveNode.curve = makeDriveCurve(v);
+  driveWet.gain.value = v * 0.9;
+  driveDry.gain.value = 1 - v * 0.5;
+}
+
+/* algorithmic reverb impulse response */
+function makeImpulse(duration, decay) {
+  const rate = AC.sampleRate;
+  const len = rate * duration;
+  const imp = AC.createBuffer(2, len, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = imp.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+    }
+  }
+  return imp;
+}
+function setReverb(v) {
+  reverbAmount = v;
+  if (!AC) return;
+  wetGain.gain.value = v;
+  dryGain.gain.value = 1 - v * 0.4;
+}
+
+/* ---- helpers ---- */
+function noiseBuffer(dur) {
+  const len = AC.sampleRate * dur;
+  const buf = AC.createBuffer(1, len, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+  return buf;
+}
+function env(gain, t, a, peak, d, sus, susLvl, r) {
+  // quick ADSR-ish on a gain node
+  const g = gain.gain;
+  g.cancelScheduledValues(t);
+  g.setValueAtTime(0.0001, t);
+  g.exponentialRampToValueAtTime(peak, t + a);
+  g.exponentialRampToValueAtTime(Math.max(susLvl, 0.0001), t + a + d);
+  g.exponentialRampToValueAtTime(0.0001, t + a + d + r);
+}
+
+/* ============================================================
+   SOUND PALETTE — 16 synthesized one-shots
+   ============================================================ */
+const SOUNDS = {
+  // 1. Warped 808 kick
+  kick808(t) {
+    const o = AC.createOscillator();
+    const g = AC.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(150, t);
+    o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+    // pitch warble
+    const lfo = AC.createOscillator(); const lfoG = AC.createGain();
+    lfo.frequency.value = 7; lfoG.gain.value = 12;
+    lfo.connect(lfoG); lfoG.connect(o.frequency); lfo.start(t); lfo.stop(t + 0.5);
+    g.gain.setValueAtTime(1.0, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+    o.connect(g); g.connect(busIn);
+    o.start(t); o.stop(t + 0.65);
+  },
+
+  // 2. Sub bass thud
+  subThud(t) {
+    const o = AC.createOscillator(); const g = AC.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(60, t);
+    o.frequency.exponentialRampToValueAtTime(32, t + 0.4);
+    g.gain.setValueAtTime(0.9, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+    o.connect(g); g.connect(busIn);
+    o.start(t); o.stop(t + 0.95);
+  },
+
+  // 3. Distorted snare + clap layer
+  snareClap(t) {
+    // tone body
+    const o = AC.createOscillator(); const og = AC.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(190, t);
+    o.frequency.exponentialRampToValueAtTime(120, t + 0.1);
+    og.gain.setValueAtTime(0.5, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    const sh = AC.createWaveShaper(); sh.curve = makeDriveCurve(0.6);
+    o.connect(og); og.connect(sh); sh.connect(busIn);
+    o.start(t); o.stop(t + 0.2);
+    // noise burst
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(0.25);
+    const nf = AC.createBiquadFilter(); nf.type = 'highpass'; nf.frequency.value = 1400;
+    const ng = AC.createGain(); ng.gain.setValueAtTime(0.8, t);
+    ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    n.connect(nf); nf.connect(ng); ng.connect(busIn); n.start(t); n.stop(t + 0.25);
+    // clap retriggers
+    for (let i = 0; i < 3; i++) {
+      const ct = t + 0.012 * i;
+      const cn = AC.createBufferSource(); cn.buffer = noiseBuffer(0.1);
+      const cf = AC.createBiquadFilter(); cf.type = 'bandpass'; cf.frequency.value = 1800; cf.Q.value = 1.2;
+      const cg = AC.createGain(); cg.gain.setValueAtTime(0.5, ct);
+      cg.gain.exponentialRampToValueAtTime(0.0001, ct + 0.08);
+      cn.connect(cf); cf.connect(cg); cg.connect(busIn); cn.start(ct); cn.stop(ct + 0.1);
+    }
+  },
+
+  // 4. Closed hi-hat
+  hatClosed(t) {
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(0.06);
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 7000;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + 0.06);
+  },
+
+  // 5. Open hi-hat
+  hatOpen(t) {
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(0.4);
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 6500;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.45, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + 0.4);
+  },
+
+  // 6. Chopped hi-hat roll
+  hatRoll(t) {
+    const reps = 6;
+    for (let i = 0; i < reps; i++) {
+      const rt = t + i * 0.045;
+      const n = AC.createBufferSource(); n.buffer = noiseBuffer(0.04);
+      const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 8000;
+      const g = AC.createGain();
+      const lvl = 0.4 * (1 - i / (reps + 2));
+      g.gain.setValueAtTime(lvl, rt);
+      g.gain.exponentialRampToValueAtTime(0.0001, rt + 0.035);
+      n.connect(f); f.connect(g); g.connect(busIn); n.start(rt); n.stop(rt + 0.04);
+    }
+  },
+
+  // 7. Glitchy crash
+  crashGlitch(t) {
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(1.2);
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 4000;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1);
+    // bitcrush-ish amplitude modulation
+    const lfo = AC.createOscillator(); const lg = AC.createGain();
+    lfo.type = 'square'; lfo.frequency.value = 55; lg.gain.value = 0.25;
+    lfo.connect(lg); lg.connect(g.gain); lfo.start(t); lfo.stop(t + 1.1);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + 1.2);
+  },
+
+  // 8. Pitch-shifted rimshot
+  rimshot(t) {
+    const o = AC.createOscillator(); const g = AC.createGain();
+    o.type = 'square'; o.frequency.setValueAtTime(440, t);
+    o.frequency.exponentialRampToValueAtTime(180, t + 0.04);
+    g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 1700; f.Q.value = 3;
+    o.connect(f); f.connect(g); g.connect(busIn); o.start(t); o.stop(t + 0.1);
+  },
+
+  // 9. Atmospheric dark pad hit
+  darkPad(t) {
+    const freqs = [110, 164.81, 220, 277.18]; // Am-ish cluster
+    const out = AC.createGain(); out.gain.value = 0.0001;
+    env(out, t, 0.25, 0.4, 0.4, 0.6, 0.2, 1.6);
+    const lp = AC.createBiquadFilter(); lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(300, t);
+    lp.frequency.linearRampToValueAtTime(1400, t + 0.8);
+    lp.frequency.linearRampToValueAtTime(400, t + 2.2);
+    freqs.forEach((fr, i) => {
+      const o = AC.createOscillator();
+      o.type = i % 2 ? 'sawtooth' : 'triangle';
+      o.frequency.value = fr; o.detune.value = (i - 1.5) * 8;
+      o.connect(lp); o.start(t); o.stop(t + 2.6);
+    });
+    lp.connect(out); out.connect(busIn);
+  },
+
+  // 10. Melodic bell stab (detuned)
+  bellStab(t) {
+    const partials = [1, 2.01, 3.03, 4.16];
+    const base = 523.25; // C5
+    const out = AC.createGain(); out.gain.value = 0.0001;
+    env(out, t, 0.005, 0.5, 0.3, 0, 0.0001, 1.0);
+    partials.forEach((p, i) => {
+      const o = AC.createOscillator(); const g = AC.createGain();
+      o.type = 'sine'; o.frequency.value = base * p;
+      o.detune.value = (i - 1.5) * 12;
+      g.gain.value = 0.5 / (i + 1);
+      o.connect(g); g.connect(out); o.start(t); o.stop(t + 1.3);
+    });
+    out.connect(busIn);
+  },
+
+  // 11. Vinyl scratch stab
+  vinylScratch(t) {
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(0.5);
+    n.playbackRate.setValueAtTime(1.6, t);
+    n.playbackRate.linearRampToValueAtTime(0.4, t + 0.12);
+    n.playbackRate.linearRampToValueAtTime(1.8, t + 0.24);
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200; f.Q.value = 4;
+    const g = AC.createGain(); g.gain.setValueAtTime(0.5, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + 0.3);
+  },
+
+  // 12. Digital glitch FX
+  glitchFX(t) {
+    for (let i = 0; i < 5; i++) {
+      const gt = t + i * 0.04;
+      const o = AC.createOscillator(); const g = AC.createGain();
+      o.type = 'square';
+      o.frequency.value = 200 + Math.random() * 2400;
+      g.gain.setValueAtTime(0.25, gt);
+      g.gain.exponentialRampToValueAtTime(0.0001, gt + 0.03);
+      o.connect(g); g.connect(busIn); o.start(gt); o.stop(gt + 0.035);
+    }
+  },
+
+  // 13. Reverse cymbal (swell up)
+  reverseCymbal(t) {
+    const dur = 1.0;
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(dur);
+    const f = AC.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 3000;
+    const g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.55, t + dur - 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + dur);
+  },
+
+  // 14. Noise sweep
+  noiseSweep(t) {
+    const dur = 0.8;
+    const n = AC.createBufferSource(); n.buffer = noiseBuffer(dur);
+    const f = AC.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 2;
+    f.frequency.setValueAtTime(300, t);
+    f.frequency.exponentialRampToValueAtTime(8000, t + dur);
+    const g = AC.createGain(); g.gain.setValueAtTime(0.4, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    n.connect(f); f.connect(g); g.connect(busIn); n.start(t); n.stop(t + dur);
+  },
+
+  // 15. Detuned pluck (melodic)
+  pluck(t) {
+    const o = AC.createOscillator(); const o2 = AC.createOscillator();
+    const g = AC.createGain();
+    o.type = 'sawtooth'; o2.type = 'sawtooth';
+    o.frequency.value = 329.63; o2.frequency.value = 329.63; o2.detune.value = 14;
+    const f = AC.createBiquadFilter(); f.type = 'lowpass';
+    f.frequency.setValueAtTime(4000, t); f.frequency.exponentialRampToValueAtTime(500, t + 0.3);
+    g.gain.setValueAtTime(0.4, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+    o.connect(f); o2.connect(f); f.connect(g); g.connect(busIn);
+    o.start(t); o2.start(t); o.stop(t + 0.45); o2.stop(t + 0.45);
+  },
+
+  // 16. Phonk cowbell
+  cowbell(t) {
+    const fr = [540, 800];
+    const out = AC.createGain(); out.gain.setValueAtTime(0.4, t);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+    fr.forEach(f => {
+      const o = AC.createOscillator(); o.type = 'square'; o.frequency.value = f;
+      o.connect(out); o.start(t); o.stop(t + 0.35);
+    });
+    const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 800; bp.Q.value = 2;
+    out.connect(bp); bp.connect(busIn);
+  }
+};
+
+/* ============================================================
+   PAD CONFIG — label, sub, color, sound key
+   ============================================================ */
+const C = { p: 'var(--purple)', c: 'var(--cyan)', r: 'var(--red)', g: 'var(--green)', o: '#ff9f1c' };
+const PADS = [
+  { lbl: '808',      sub: 'warped kick',  col: C.r, snd: 'kick808' },
+  { lbl: 'SNARE',    sub: 'clap layer',   col: C.c, snd: 'snareClap' },
+  { lbl: 'HAT',      sub: 'closed',       col: C.p, snd: 'hatClosed' },
+  { lbl: 'OPEN',     sub: 'open hat',     col: C.c, snd: 'hatOpen' },
+
+  { lbl: 'ROLL',     sub: 'hat chop',     col: C.p, snd: 'hatRoll' },
+  { lbl: 'CRASH',    sub: 'glitch',       col: C.r, snd: 'crashGlitch' },
+  { lbl: 'RIM',      sub: 'pitch shift',  col: C.o, snd: 'rimshot' },
+  { lbl: 'SUB',      sub: 'bass thud',    col: C.r, snd: 'subThud' },
+
+  { lbl: 'PAD',      sub: 'dark atmos',   col: C.p, snd: 'darkPad' },
+  { lbl: 'BELL',     sub: 'detuned',      col: C.c, snd: 'bellStab' },
+  { lbl: 'SCRATCH',  sub: 'vinyl stab',   col: C.o, snd: 'vinylScratch' },
+  { lbl: 'GLITCH',   sub: 'digital fx',   col: C.g, snd: 'glitchFX' },
+
+  { lbl: 'REV CYM',  sub: 'reverse',      col: C.c, snd: 'reverseCymbal' },
+  { lbl: 'SWEEP',    sub: 'noise',        col: C.g, snd: 'noiseSweep' },
+  { lbl: 'PLUCK',    sub: 'melodic',      col: C.p, snd: 'pluck' },
+  { lbl: 'COWBELL',  sub: 'phonk',        col: C.o, snd: 'cowbell' },
+];
+
+/* ============================================================
+   UI BUILD
+   ============================================================ */
+const grid = document.getElementById('grid');
+const padEls = [];
+PADS.forEach((p, i) => {
+  const el = document.createElement('div');
+  el.className = 'pad';
+  el.style.setProperty('--c', p.col);
+  el.innerHTML = `<div class="num">${String(i + 1).padStart(2, '0')}</div>
+                  <div class="stepdot"></div>
+                  <div class="lbl">${p.lbl}</div>
+                  <div class="sub">${p.sub}</div>`;
+  grid.appendChild(el);
+  padEls.push(el);
+
+  const fire = (e) => {
+    e.preventDefault();
+    initAudio();
+    if (AC.state === 'suspended') AC.resume();
+    triggerPad(i);
+  };
+  el.addEventListener('touchstart', fire, { passive: false });
+  el.addEventListener('mousedown', fire);
+});
+
+function flashPad(i) {
+  const el = padEls[i];
+  el.classList.add('active');
+  setTimeout(() => el.classList.remove('active'), 110);
+}
+
+function triggerPad(i, scheduledTime) {
+  const t = scheduledTime != null ? scheduledTime : AC.currentTime;
+  SOUNDS[PADS[i].snd](t);
+  if (scheduledTime == null) flashPad(i);
+  if (recording) recordHit(i);
+}
+
+/* ============================================================
+   SEQUENCER  — 8 steps
+   ============================================================ */
+const STEPS = 8;
+let bpm = 140;
+let recording = false;
+let playing = false;
+let currentStep = 0;
+let nextNoteTime = 0;
+let schedulerTimer = null;
+const sequence = Array.from({ length: STEPS }, () => []); // each step holds array of pad indices
+
+// step lights
+const stepsWrap = document.getElementById('steps');
+const stepLights = [];
+for (let i = 0; i < STEPS; i++) {
+  const s = document.createElement('div');
+  s.className = 'steplight';
+  stepsWrap.appendChild(s);
+  stepLights.push(s);
+}
+
+function recordHit(padIndex) {
+  // record into the step nearest to "now" in the loop
+  const stepDur = (60 / bpm) / 2; // 8th notes
+  let step;
+  if (playing) {
+    step = currentStep;
+  } else {
+    step = 0;
+  }
+  if (!sequence[step].includes(padIndex)) sequence[step].push(padIndex);
+}
+
+function stepDurSec() { return (60 / bpm) / 2; }
+
+function scheduler() {
+  const lookahead = 0.1;
+  while (nextNoteTime < AC.currentTime + lookahead) {
+    const step = currentStep;
+    // schedule sounds
+    sequence[step].forEach(pi => triggerPad(pi, nextNoteTime));
+    // schedule visual
+    const drawTime = nextNoteTime;
+    const drawStep = step;
+    const delay = (drawTime - AC.currentTime) * 1000;
+    setTimeout(() => {
+      stepLights.forEach((s, idx) => s.classList.toggle('on', idx === drawStep));
+      sequence[drawStep].forEach(pi => flashPad(pi));
+    }, Math.max(0, delay));
+    // advance
+    nextNoteTime += stepDurSec();
+    currentStep = (currentStep + 1) % STEPS;
+  }
+  schedulerTimer = setTimeout(scheduler, 25);
+}
+
+function startLoop() {
+  initAudio();
+  if (AC.state === 'suspended') AC.resume();
+  playing = true;
+  currentStep = 0;
+  nextNoteTime = AC.currentTime + 0.05;
+  scheduler();
+  btnPlay.classList.add('on');
+}
+function stopLoop() {
+  playing = false;
+  clearTimeout(schedulerTimer);
+  stepLights.forEach(s => s.classList.remove('on'));
+  btnPlay.classList.remove('on');
+}
+
+/* ============================================================
+   CONTROLS — buttons
+   ============================================================ */
+const btnRec = document.getElementById('btnRec');
+const btnPlay = document.getElementById('btnPlay');
+const btnClr = document.getElementById('btnClr');
+const modeTxt = document.getElementById('modeTxt');
+
+btnRec.addEventListener('click', () => {
+  initAudio();
+  recording = !recording;
+  btnRec.classList.toggle('on', recording);
+  modeTxt.textContent = recording ? 'REC' : (playing ? 'LOOP' : 'LIVE');
+  if (recording && !playing) startLoop();
+});
+
+btnPlay.addEventListener('click', () => {
+  if (playing) { stopLoop(); modeTxt.textContent = recording ? 'REC' : 'LIVE'; }
+  else { startLoop(); modeTxt.textContent = 'LOOP'; }
+});
+
+btnClr.addEventListener('click', () => {
+  for (let i = 0; i < STEPS; i++) sequence[i] = [];
+  flash();
+});
+
+/* ============================================================
+   KNOBS & BPM DIAL — drag to turn
+   ============================================================ */
+function makeKnob(el, valEl, min, max, value, fmt, onChange) {
+  let v = value;
+  const update = () => {
+    const norm = (v - min) / (max - min);
+    const deg = -135 + norm * 270;
+    el.style.setProperty('--rot', deg + 'deg');
+    if (valEl) valEl.textContent = fmt(v);
+    onChange(v);
+  };
+  update();
+  let startY = 0, startV = 0;
+  const down = (e) => {
+    e.preventDefault();
+    initAudio();
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    startV = v;
+    window.addEventListener('touchmove', move, { passive: false });
+    window.addEventListener('mousemove', move);
+    window.addEventListener('touchend', up);
+    window.addEventListener('mouseup', up);
+  };
+  const move = (e) => {
+    e.preventDefault();
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    const dy = startY - y;
+    v = Math.min(max, Math.max(min, startV + dy * (max - min) / 180));
+    update();
+  };
+  const up = () => {
+    window.removeEventListener('touchmove', move);
+    window.removeEventListener('mousemove', move);
+    window.removeEventListener('touchend', up);
+    window.removeEventListener('mouseup', up);
+  };
+  el.addEventListener('touchstart', down, { passive: false });
+  el.addEventListener('mousedown', down);
+  return { set: (nv) => { v = nv; update(); } };
+}
+
+makeKnob(document.getElementById('kReverb'), document.getElementById('vReverb'),
+  0, 100, 20, (v) => Math.round(v), (v) => setReverb(v / 100));
+
+makeKnob(document.getElementById('kDrive'), document.getElementById('vDrive'),
+  0, 100, 15, (v) => Math.round(v), (v) => setDrive(v / 100));
+
+makeKnob(document.getElementById('bpmDial'), null,
+  80, 160, 140, (v) => Math.round(v), (v) => {
+    bpm = Math.round(v);
+    document.getElementById('bpmNum').textContent = bpm;
+  });
+
+/* ============================================================
+   FX — screen flash on glitch sounds
+   ============================================================ */
+const flashEl = document.getElementById('flash');
+function flash() {
+  flashEl.style.transition = 'none';
+  flashEl.style.opacity = '0.25';
+  requestAnimationFrame(() => {
+    flashEl.style.transition = 'opacity 0.18s';
+    flashEl.style.opacity = '0';
+  });
+}
+
+/* keyboard support (desktop testing): 1-4, q-r, a-f, z-v */
+const KEYMAP = ['1','2','3','4','q','w','e','r','a','s','d','f','z','x','c','v'];
+window.addEventListener('keydown', (e) => {
+  if (e.repeat) return;
+  const idx = KEYMAP.indexOf(e.key.toLowerCase());
+  if (idx >= 0) {
+    initAudio();
+    if (AC.state === 'suspended') AC.resume();
+    triggerPad(idx);
+  }
+});
+
+/* resume context on any first touch */
+document.body.addEventListener('touchstart', () => { initAudio(); if (AC && AC.state === 'suspended') AC.resume(); }, { once: true });
+</script>
+</body>
+</html>
