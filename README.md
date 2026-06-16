@@ -27,11 +27,25 @@ transport** locked to the BPM. Latch pads into it and layer up a beat:
 | **Verb** | Global algorithmic reverb send. |
 | **Drive** | Global waveshaper distortion. |
 | **Filter** | Global lowpass sweep (master tone). |
+| **Swing** | Shuffle — delays the off-16th notes for a phonk bounce. |
+| **BARS** | Loop length: 1 / 2 / 4 bars (16 / 32 / 64 steps). |
 | **LO-FI** | Bitcrush + filtered lo-fi digital texture. |
 | **PLAY / STOP** | Start/stop the transport. |
-| **SAVE / LOAD** | Store/recall a full preset (patterns, latches, FX, BPM) in localStorage. |
-| **WAV** | Render the looped beat (2 bars) offline and download it as a `.wav`. |
+| **SAVE / LOAD** | Store/recall a full preset (patterns, latches, per-pad tweaks, FX, BPM) in localStorage. |
+| **WAV** | Render the full looped beat offline and download it as a `.wav`. |
 | **CLR** | Clear all patterns and latches. |
+
+### Per-pad sound tweaking
+**Long-press any pad** to open its editor: **Volume**, **Pitch** (±12
+semitones), **Decay**, and a **Mute** toggle — each pad keeps its own
+settings. Sounds are pre-rendered to buffers so pitch/decay are true sampler
+controls. In **EDIT** mode with a multi-bar loop, tap the loop label (left of
+the step bar) to page between bars.
+
+### Vibe
+A reactive frequency **visualizer** pulses behind the grid, pads **glow** on
+hit, and taps fire **haptic feedback** on devices that support it. Custom neon
+pad-grid **app icon + splash** are generated for the APK.
 
 Desktop testing: keys `1 2 3 4 / q w e r / a s d f / z x c v` map to the 16
 pads, `Space` toggles the transport.
@@ -60,6 +74,7 @@ Requires Node 18+, JDK 21, and the Android SDK (`ANDROID_HOME` set).
 npm install
 npm run build:web        # copy index.html -> www/
 npx cap add android      # scaffold the native android/ project (first time)
+npm run assets           # generate + apply the neon app icon + splash
 npm run apk:debug        # sync + gradlew assembleDebug
 ```
 

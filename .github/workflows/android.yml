@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -35,6 +35,8 @@ jobs:
         run: |
           npm run build:web
           npx cap add android
+          npm run icons
+          npx capacitor-assets generate --android
           npx cap sync android
 
       - name: Build debug APK

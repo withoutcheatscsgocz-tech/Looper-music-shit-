@@ -5,6 +5,8 @@
   "description": "Looper // Rage Pad — Web Audio DJ-looper / beat sampler packaged as an Android APK via Capacitor.",
   "scripts": {
     "build:web": "node scripts/build-web.mjs",
+    "icons": "node scripts/gen-icon.mjs",
+    "assets": "npm run icons && capacitor-assets generate --android",
     "sync": "npm run build:web && cap sync android",
     "add:android": "cap add android",
     "open:android": "cap open android",
@@ -16,6 +18,7 @@
     "@capacitor/core": "^8.0.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.0.0"
   }
 }
