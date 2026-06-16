@@ -1,0 +1,48 @@
+name: Build Android APK
+
+# Builds the Looper APK on CI (where the Android SDK is available) and
+# uploads the debug APK as a downloadable artifact. Trigger manually from
+# the Actions tab, or it runs on every push to the feature branch / main.
+on:
+  push:
+    branches: [ main, "claude/**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web + add Android platform
+        run: |
+          npm run build:web
+          npx cap add android
+          npx cap sync android
+
+      - name: Build debug APK
+        run: cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: looper-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
