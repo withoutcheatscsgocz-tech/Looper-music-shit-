@@ -1,0 +1,12 @@
+{
+  "appId": "com.looper.ragepad",
+  "appName": "Looper",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#08080c"
+  },
+  "server": {
+    "androidScheme": "https"
+  }
+}

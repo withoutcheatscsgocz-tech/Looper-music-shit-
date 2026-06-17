@@ -1,0 +1,97 @@
+name: Release APK
+
+# Builds a SIGNED release APK and publishes it to a GitHub Release.
+# Trigger by pushing a version tag (e.g. `git tag v1.0.0 && git push origin v1.0.0`)
+# or run manually with a version input from the Actions tab.
+#
+# Signing: if the repo secrets KEYSTORE_BASE64 / KEYSTORE_PASSWORD /
+# KEY_ALIAS / KEY_PASSWORD are set, that keystore is used. Otherwise a
+# throwaway keystore is generated in-CI so you still get an installable,
+# self-signed release APK (re-generated each run — fine for sideloading,
+# but use real secrets for a stable upload key on the Play Store).
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: true
+        default: 'v0.0.0-dev'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build web + Android platform + assets
+        run: |
+          npm install
+          npm run build:web
+          npx cap add android
+          npm run icons
+          npx capacitor-assets generate --android
+          npx cap sync android
+
+      - name: Prepare signing keystore
+        id: sign
+        run: |
+          if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > android/app/release.keystore
+            echo "store_pass=${{ secrets.KEYSTORE_PASSWORD }}" >> "$GITHUB_OUTPUT"
+            echo "key_alias=${{ secrets.KEY_ALIAS }}" >> "$GITHUB_OUTPUT"
+            echo "key_pass=${{ secrets.KEY_PASSWORD }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No KEYSTORE_BASE64 secret found — generating a throwaway keystore."
+            keytool -genkeypair -v -keystore android/app/release.keystore \
+              -alias looper -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass looper123 -keypass looper123 \
+              -dname "CN=Looper, OU=RagePad, O=Looper, L=, S=, C=US"
+            echo "store_pass=looper123" >> "$GITHUB_OUTPUT"
+            echo "key_alias=looper" >> "$GITHUB_OUTPUT"
+            echo "key_pass=looper123" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build signed release APK
+        run: |
+          cd android && chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon \
+            -Pandroid.injected.signing.store.file="$GITHUB_WORKSPACE/android/app/release.keystore" \
+            -Pandroid.injected.signing.store.password=${{ steps.sign.outputs.store_pass }} \
+            -Pandroid.injected.signing.key.alias=${{ steps.sign.outputs.key_alias }} \
+            -Pandroid.injected.signing.key.password=${{ steps.sign.outputs.key_pass }}
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk looper-${{ steps.ver.outputs.tag }}.apk
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: Looper ${{ steps.ver.outputs.tag }}
+          body: |
+            **Looper // Rage Pad** — signed release APK.
+            Download `looper-${{ steps.ver.outputs.tag }}.apk`, enable "install from unknown sources", and sideload.
+          files: looper-${{ steps.ver.outputs.tag }}.apk
+          fail_on_unmatched_files: true
