@@ -38,7 +38,12 @@ jobs:
 
       - name: Resolve version
         id: ver
-        run: echo "tag=${GITHUB_REF_NAME:-${{ github.event.inputs.version }}}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Build web + Android platform + assets
         run: |
